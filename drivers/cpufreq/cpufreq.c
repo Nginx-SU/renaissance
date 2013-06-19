@@ -3,6 +3,7 @@
  *
  *  Copyright (C) 2001 Russell King
  *            (C) 2002 - 2003 Dominik Brodowski <linux@brodo.de>
+ *            (C) 2013 Viresh Kumar <viresh.kumar@linaro.org>
  *
  *  Oct 2005 - Ashok Raj <ashok.raj@intel.com>
  *	Added handling for CPU hotplug
@@ -12,7 +13,6 @@
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
  */
 
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
@@ -42,6 +42,9 @@
  */
 static struct cpufreq_driver *cpufreq_driver;
 static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
+static DEFINE_RWLOCK(cpufreq_driver_lock);
+static DEFINE_MUTEX(cpufreq_governor_lock);
+
 #ifdef CONFIG_HOTPLUG_CPU
 /*
  * This one keeps track of the previously set governor and user-set
@@ -53,7 +56,6 @@ struct cpufreq_cpu_save_data {
 };
 static DEFINE_PER_CPU(struct cpufreq_cpu_save_data, cpufreq_policy_save);
 #endif
-static DEFINE_RWLOCK(cpufreq_driver_lock);
 
 static struct kset *cpudev_kset;
 DEFINE_MUTEX(cpufreq_governor_lock);
@@ -216,7 +218,6 @@ static struct cpufreq_policy *__cpufreq_cpu_get(unsigned int cpu, int sysfs)
 	if (!try_module_get(cpufreq_driver->owner))
 		goto err_out_unlock;
 
-
 	/* get the CPU */
 	data = per_cpu(cpufreq_cpu_data, cpu);
 
@@ -286,7 +287,7 @@ static void cpufreq_cpu_put_sysfs(struct cpufreq_policy *data)
  */
 #ifndef CONFIG_SMP
 static unsigned long l_p_j_ref;
-static unsigned int  l_p_j_ref_freq;
+static unsigned int l_p_j_ref_freq;
 
 static void adjust_jiffies(unsigned long val, struct cpufreq_freqs *ci)
 {
@@ -299,7 +300,7 @@ static void adjust_jiffies(unsigned long val, struct cpufreq_freqs *ci)
 		pr_debug("saving %lu as reference value for loops_per_jiffy; "
 			"freq is %u kHz\n", l_p_j_ref, l_p_j_ref_freq);
 	}
-	if ((val == CPUFREQ_POSTCHANGE  && ci->old != ci->new) ||
+	if ((val == CPUFREQ_POSTCHANGE && ci->old != ci->new) ||
 	    (val == CPUFREQ_RESUMECHANGE || val == CPUFREQ_SUSPENDCHANGE)) {
 		loops_per_jiffy = cpufreq_scale(l_p_j_ref, l_p_j_ref_freq,
 								ci->new);
@@ -313,7 +314,6 @@ static inline void adjust_jiffies(unsigned long val, struct cpufreq_freqs *ci)
 	return;
 }
 #endif
-
 
 /**
  * cpufreq_notify_transition - call notifier chain and adjust_jiffies
@@ -377,6 +377,7 @@ void cpufreq_notify_transition(struct cpufreq_freqs *freqs, unsigned int state)
 	}
 }
 EXPORT_SYMBOL_GPL(cpufreq_notify_transition);
+
 /**
  * cpufreq_notify_utilization - notify CPU userspace about CPU utilization
  * change
@@ -624,7 +625,6 @@ static ssize_t show_cpuinfo_cur_freq(struct cpufreq_policy *policy,
 	return sprintf(buf, "%u\n", cur_freq);
 }
 
-
 /**
  * show_scaling_governor - show the current policy for the specified CPU
  */
@@ -639,7 +639,6 @@ static ssize_t show_scaling_governor(struct cpufreq_policy *policy, char *buf)
 				policy->governor->name);
 	return -EINVAL;
 }
-
 
 /**
  * store_scaling_governor - store policy for the specified CPU
@@ -665,8 +664,10 @@ static ssize_t store_scaling_governor(struct cpufreq_policy *policy,
 						&new_policy.governor))
 		return -EINVAL;
 
-	/* Do not use cpufreq_set_policy here or the user_policy.max
-	   will be wrongly overridden */
+	/*
+	 * Do not use cpufreq_set_policy here or the user_policy.max
+	 * will be wrongly overridden
+	 */
 	ret = __cpufreq_set_policy(policy, &new_policy);
 
 	if (policy->max > 2803200)
@@ -1404,7 +1405,8 @@ static void update_policy_cpu(struct cpufreq_policy *policy, unsigned int cpu)
  * Caller should already have policy_rwsem in write mode for this CPU.
  * This routine frees the rwsem before returning.
  */
-static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif)
+static int __cpufreq_remove_dev(struct device *dev,
+		struct subsys_interface *sif)
 {
 	unsigned int cpu = dev->id, ret, cpus;
 	unsigned long flags;
@@ -1516,7 +1518,6 @@ static int __cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif
 	return 0;
 }
 
-
 static int cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif)
 {
 	unsigned int cpu = dev->id;
@@ -1529,7 +1530,6 @@ static int cpufreq_remove_dev(struct device *dev, struct subsys_interface *sif)
 	return retval;
 }
 
-
 static void handle_update(struct work_struct *work)
 {
 	struct cpufreq_policy *policy =
@@ -1540,7 +1540,8 @@ static void handle_update(struct work_struct *work)
 }
 
 /**
- *	cpufreq_out_of_sync - If actual and saved CPU frequency differs, we're in deep trouble.
+ *	cpufreq_out_of_sync - If actual and saved CPU frequency differs, we're
+ *	in deep trouble.
  *	@cpu: cpu number
  *	@old_freq: CPU frequency the kernel thinks the CPU runs at
  *	@new_freq: CPU frequency the CPU actually runs at
@@ -1715,7 +1716,6 @@ static struct subsys_interface cpufreq_interface = {
 	.remove_dev	= cpufreq_remove_dev,
 };
 
-
 /**
  * cpufreq_bp_suspend - Prepare the boot CPU for system suspend.
  *
@@ -1816,7 +1816,7 @@ EXPORT_SYMBOL_GPL(cpufreq_get_current_driver);
 /**
  *	cpufreq_register_notifier - register a driver with cpufreq
  *	@nb: notifier function to register
- *      @list: CPUFREQ_TRANSITION_NOTIFIER or CPUFREQ_POLICY_NOTIFIER
+ * @list: CPUFREQ_TRANSITION_NOTIFIER or CPUFREQ_POLICY_NOTIFIER
  *
  *	Add a driver to one of two lists: either a list of drivers that
  *      are notified about clock rate changes (once before and once after
@@ -1856,7 +1856,6 @@ int cpufreq_register_notifier(struct notifier_block *nb, unsigned int list)
 	return ret;
 }
 EXPORT_SYMBOL(cpufreq_register_notifier);
-
 
 /**
  *	cpufreq_unregister_notifier - unregister a driver with cpufreq
@@ -2109,8 +2108,6 @@ void cpufreq_unregister_governor(struct cpufreq_governor *governor)
 }
 EXPORT_SYMBOL_GPL(cpufreq_unregister_governor);
 
-
-
 /*********************************************************************
  *                          POLICY INTERFACE                         *
  *********************************************************************/
@@ -2176,8 +2173,10 @@ static int __cpufreq_set_policy(struct cpufreq_policy *data,
 	blocking_notifier_call_chain(&cpufreq_policy_notifier_list,
 			CPUFREQ_INCOMPATIBLE, policy);
 
-	/* verify the cpu speed can be set within this limit,
-	   which might be different to the first one */
+	/*
+	 * verify the cpu speed can be set within this limit, which might be
+	 * different to the first one
+	 */
 	ret = cpufreq_driver->verify(policy);
 	if (ret)
 		goto error_out;
@@ -2444,8 +2443,10 @@ int cpufreq_update_policy(unsigned int cpu)
 	policy.policy = data->user_policy.policy;
 	policy.governor = data->user_policy.governor;
 
-	/* BIOS might change freq behind our back
-	  -> ask driver for current freq and notify governors about a change */
+	/*
+	 * BIOS might change freq behind our back
+	 * -> ask driver for current freq and notify governors about a change
+	 */
 	if (cpufreq_driver->get) {
 		policy.cur = cpufreq_driver->get(cpu);
 		if (!data->cur) {
@@ -2561,7 +2562,7 @@ static int __cpuinit cpufreq_cpu_callback(struct notifier_block *nfb,
 }
 
 static struct notifier_block __refdata cpufreq_cpu_notifier = {
-    .notifier_call = cpufreq_cpu_callback,
+	.notifier_call = cpufreq_cpu_callback,
 };
 
 /*********************************************************************
@@ -2573,7 +2574,7 @@ static struct notifier_block __refdata cpufreq_cpu_notifier = {
  * @driver_data: A struct cpufreq_driver containing the values#
  * submitted by the CPU Frequency driver.
  *
- *   Registers a CPU Frequency driver to this core code. This code
+ * Registers a CPU Frequency driver to this core code. This code
  * returns zero on success, -EBUSY when another driver got here first
  * (and isn't unregistered in the meantime).
  *
@@ -2647,7 +2648,7 @@ EXPORT_SYMBOL_GPL(cpufreq_register_driver);
 /**
  * cpufreq_unregister_driver - unregister the current CPUFreq driver
  *
- *    Unregister the current CPUFreq driver. Only call this if you have
+ * Unregister the current CPUFreq driver. Only call this if you have
  * the right to do so, i.e. if you have succeeded in initialising before!
  * Returns zero if successful, and -EINVAL if the cpufreq_driver is
  * currently not initialised.
