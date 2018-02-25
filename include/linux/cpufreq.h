@@ -326,19 +326,11 @@ __ATTR(_name, 0644, show_##_name, store_##_name)
 /*********************************************************************
  *                        CPUFREQ 2.6. INTERFACE                     *
  *********************************************************************/
+u64 get_cpu_idle_time(unsigned int cpu, u64 *wall, int io_busy);
 int cpufreq_get_policy(struct cpufreq_policy *policy, unsigned int cpu);
 int cpufreq_update_policy(unsigned int cpu);
 int cpufreq_update_freq(unsigned int cpu, unsigned int min, unsigned int max);
 int cpufreq_qos_requirement(unsigned int kHz);
-
-#ifdef CONFIG_MSM_LIMITER
-int cpufreq_set_gov(char *target_gov, unsigned int cpu);
-char *cpufreq_get_gov(unsigned int cpu);
-int cpufreq_set_freq(unsigned int max_freq, unsigned int min_freq,
-			unsigned int cpu);
-int cpufreq_get_max(unsigned int cpu);
-int cpufreq_get_min(unsigned int cpu);
-#endif
 
 #ifdef CONFIG_CPU_FREQ
 /* query the current CPU frequency (in kHz). If zero, cpufreq couldn't detect it */
@@ -410,6 +402,9 @@ extern struct cpufreq_governor cpufreq_gov_intelliactive;
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_SMARTMAX)
 extern struct cpufreq_governor cpufreq_gov_smartmax;
 #define CPUFREQ_DEFAULT_GOVERNOR        (&cpufreq_gov_smartmax)
+#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_LIONHEART)
+extern struct cpufreq_governor cpufreq_gov_lionheart;
+#define CPUFREQ_DEFAULT_GOVERNOR        (&cpufreq_gov_lionheart)
 #endif
 
 
