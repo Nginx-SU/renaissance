@@ -17,9 +17,9 @@ This kernel feature is :
 - Added custom CPU Governor 
 : Alucard,Intelliactive,IntelliMM,PegasusQ,Smartmax,Lionheart & Intellidemand
 - Added custom I/O Sched Governor 
-: zen,sio,sioplus,tripndroid,fifo,fiops and vr
+: zen,sio,sioplus,tripndroid,fifo,fiops,maple,bfq and vr
 - Added custom TCP Modules
-: Advanced,Bic,Westwood,Hybla,Vegas,Veno,Yeah and more
+: Advanced,Bic,Westwood,Hybla,Vegas,Veno,Yeah,Ascarex and more
 - Implement Power Efficient Workqueues
 - Added Interface of Gentle Fair Sleepers,CPU Boost,Android Logger,Wakelock Toggles and Arch Power (Option Disable by Default)
 - Added Frandom Support
@@ -30,13 +30,13 @@ This kernel feature is :
 - Added Intelli Thermal v1.0
 - Added Headset High Perfomance Mode (HPF)
 - Added Simple GPU Algorithm
-- Added Faux Sound Control v3.4
+- Added Faux Sound Control v3.6
 - Added Powersuspend Driver v1.5
 - Added State Notifier Driver
 - Compiled using GCC 5.4.1 Hyper Toolchains
 - Added Compatibility with AnyKernel v1 Script
 - Added EXFAT File System Support (Need Test)
-- Added SDCARDFS Support (Need Test)
+- Updated F2FS to latest revision branch (f2fs-stable.git)
 
 #BETA PROJECT
 
@@ -44,7 +44,7 @@ Build status :
 
 - First  Build        Done         20180217      [  Uploaded  ] / [XDA-VERSION]
 - Second Build        Done         20180225      [  Uploaded  ]
-- Second Build RC1    Building     20180225      [Not Uploaded]
+- Third  Build (F2FS) Done	   20180304	 [Not Uploaded] 
 
 Thanks to: 
 - @rmnhg      [For kernel source] 
