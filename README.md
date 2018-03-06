@@ -36,8 +36,13 @@ This kernel feature is :
 - Compiled using GCC 5.4.1 Hyper Toolchains
 - Added Compatibility with AnyKernel v1 Script
 - Added EXFAT File System Support (Need Test)
+- Updated F2FS to latest revision branch (f2fs-stable.git) [F2FS Branch]
 
 #BETA PROJECT
+
+Branch Information:
+- F2FS Support : https://github.com/Nicklas373/renaissance/tree/Nanaka-F2FS
+- No F2FS Support : https://github.com/Nicklas373/renaissance/tree/Nanaka
 
 Build status :
 
