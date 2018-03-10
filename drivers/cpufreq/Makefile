@@ -1,5 +1,6 @@
 # CPUfreq core
-obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o cpu-boost.o
+obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o cpu-boost.o cpufreq_governor.o
+
 # CPUfreq stats
 obj-$(CONFIG_CPU_FREQ_STAT)             += cpufreq_stats.o
 
@@ -16,6 +17,9 @@ obj-$(CONFIG_CPU_FREQ_GOV_INTELLIDEMAND)+= cpufreq_intellidemand.o
 obj-$(CONFIG_CPU_FREQ_GOV_LIONHEART)	+= cpufreq_lionheart.o
 obj-$(CONFIG_CPU_FREQ_GOV_PEGASUSQ)	+= cpufreq_pegasusq.o
 obj-$(CONFIG_CPU_FREQ_GOV_SMARTMAX)     += cpufreq_smartmax.o
+obj-$(CONFIG_CPU_FREQ_GOV_COMMON)	+= cpufreq_governor.o
+obj-$(CONFIG_CPU_FREQ_GOV_CHILL)	+= cpufreq_chill.o
+obj-$(CONFIG_CPU_FREQ_GOV_RELAXED)	+= cpufreq_relaxed.o
 
 # CPUfreq cross-arch helpers
 obj-$(CONFIG_CPU_FREQ_TABLE)		+= freq_table.o
