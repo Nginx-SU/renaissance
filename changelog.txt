@@ -1,4 +1,4 @@
-- Third Build rev-1 (20180319)[F2FS Version]:
+- 3.1   (20180319)[F2FS Version]:
 	- Added upstream cpu governor (thanks to @infus38)
 	- CPU misc optimization
 	- Added Chill & Relaxed CPU Governor
