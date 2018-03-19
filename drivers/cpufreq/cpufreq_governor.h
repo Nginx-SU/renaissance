@@ -185,11 +185,7 @@ struct cs_dbs_tuners {
 	unsigned int sampling_down_factor;
 	unsigned int up_threshold;
 	unsigned int down_threshold;
-<<<<<<< HEAD
  	unsigned int freq_step;
-=======
-	unsigned int freq_step;
->>>>>>> 71a8d753d0815517f4054224099881b2d729271e
 	unsigned int down_threshold_suspended;
 	unsigned int sleep_depth;
 	unsigned int boost_enabled;

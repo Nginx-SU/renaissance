@@ -165,11 +165,7 @@ static inline void __gov_queue_work(int cpu, struct dbs_data *dbs_data,
 {
 	struct cpu_dbs_common_info *cdbs = dbs_data->cdata->get_cpu_cdbs(cpu);
 
-<<<<<<< HEAD
 	schedule_delayed_work_on(cpu, &cdbs->work, delay);
-=======
-	queue_delayed_work_on(cpu, system_wq, &cdbs->work, delay);
->>>>>>> 71a8d753d0815517f4054224099881b2d729271e
 }
 
 void gov_queue_work(struct dbs_data *dbs_data, struct cpufreq_policy *policy,
@@ -387,11 +383,7 @@ int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 					kcpustat_cpu(j).cpustat[CPUTIME_NICE];
 
 			mutex_init(&j_cdbs->timer_mutex);
-<<<<<<< HEAD
 			INIT_DELAYED_WORK_DEFERRABLE(&j_cdbs->work,
-=======
-			INIT_DELAYED_WORK(&j_cdbs->work,
->>>>>>> 71a8d753d0815517f4054224099881b2d729271e
 					     dbs_data->cdata->gov_dbs_timer);
 		}
 
