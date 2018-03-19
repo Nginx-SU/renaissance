@@ -19,7 +19,7 @@
 	- Added Tripndroid I/O Sched
 	- Setting up Maple as default I/O Sched and Westwood as default TCP Congestion (Need Test)
 
-Third Build (20180304)[F2FS Version]:
+- Third Build (20180304)[F2FS Version]:
 	- Re-port F2FS to current revision branch from f2fs-stable.git
 	- Re-configure F2FS configs
 	- Update FAUX Sound Control to v3.6

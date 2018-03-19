@@ -43,7 +43,7 @@ This kernel feature is :
 
 Branch Information:
 - F2FS Support : https://github.com/Nicklas373/renaissance/tree/Nanaka-F2FS
-- No F2FS Support : https://github.com/Nicklas373/renaissance/tree/Nanaka
+- No F2FS Support : https://github.com/Nicklas373/renaissance/tree/Kanan
 
 Build status :
 

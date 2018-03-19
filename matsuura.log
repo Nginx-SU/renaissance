@@ -1,4 +1,5 @@
 scripts/kconfig/conf --silentoldconfig Kconfig
+<<<<<<< HEAD
   WRAP    arch/arm/include/generated/asm/auxvec.h
   WRAP    arch/arm/include/generated/asm/bitsperlong.h
   WRAP    arch/arm/include/generated/asm/cputime.h
@@ -2722,6 +2723,18 @@ scripts/kconfig/conf --silentoldconfig Kconfig
   CC      drivers/staging/prima/CORE/WDI/WPAL/src/wlan_qct_pal_sync.o
   CC      drivers/staging/prima/CORE/WDI/WPAL/src/wlan_qct_pal_timer.o
   CC      drivers/staging/prima/CORE/WDI/WPAL/src/wlan_qct_pal_trace.o
+=======
+  CHK     include/linux/version.h
+make[1]: Nothing to be done for 'arch/arm/boot/dtbs'.
+  CHK     include/generated/utsrelease.h
+make[1]: 'include/generated/mach-types.h' is up to date.
+  CALL    scripts/checksyscalls.sh
+  CHK     include/generated/compile.h
+  CC      arch/arm/hotplug/intelli_plug.o
+  LD      arch/arm/hotplug/built-in.o
+  GZIP    kernel/config_data.gz
+  CHK     kernel/config_data.h
+>>>>>>> 71a8d753d0815517f4054224099881b2d729271e
   LD      drivers/staging/prima/wlan.o
   LD      drivers/staging/prima/built-in.o
   LD      drivers/staging/built-in.o
@@ -2745,8 +2758,13 @@ scripts/kconfig/conf --silentoldconfig Kconfig
   OBJCOPY arch/arm/boot/Image
   Kernel: arch/arm/boot/Image is ready
   AS      arch/arm/boot/compressed/head.o
+<<<<<<< HEAD
   GZIP    arch/arm/boot/compressed/piggy.gzip
   CC      arch/arm/boot/compressed/misc.o
+=======
+  CC      arch/arm/boot/compressed/misc.o
+  GZIP    arch/arm/boot/compressed/piggy.gzip
+>>>>>>> 71a8d753d0815517f4054224099881b2d729271e
   CC      arch/arm/boot/compressed/decompress.o
   CC      arch/arm/boot/compressed/string.o
   SHIPPED arch/arm/boot/compressed/lib1funcs.S
