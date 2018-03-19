@@ -1,4 +1,4 @@
-- Third Build rev-1 (20180310)[F2FS Version]:
+- Third Build rev-1 (20180319)[F2FS Version]:
 	- Added upstream cpu governor (thanks to @infus38)
 	- CPU misc optimization
 	- Added Chill & Relaxed CPU Governor
@@ -6,6 +6,8 @@
 	- Disable some tracing and debugging
 	- Updated Dynamic fsync to v2.0
 	- Updated Intelli plug to v5.4
+	- Misc optimization for intelli thermal
+	- Fix problem with interactive and ondemand crash (WIP)
 
 - Third Build (20180304)[F2FS Version]:
 	- Re-port F2FS to current revision branch from f2fs-stable.git
