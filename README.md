@@ -42,7 +42,7 @@ This kernel feature is :
 #BETA PROJECT
 
 Branch Information:
-- F2FS Support : https://github.com/Nicklas373/renaissance/tree/Nanaka-F2FS
+- F2FS Support : https://github.com/Nicklas373/renaissance/tree/Kanan-F2FS
 - No F2FS Support : https://github.com/Nicklas373/renaissance/tree/Kanan
 
 Build status :
@@ -51,7 +51,8 @@ Build status :
 - Second Build        Done         20180225      [  Uploaded  ]
 - Third  Build (F2FS) Done	   20180304	 [  Uploaded  ] / [XDA-VERSION]
 - Third  Build 	      Done 	   20180307      [Not Uploaded]
-- Third  Build Rev-1  Done	   20180319	 [  Uploaded  ]
+- 3.1    Build        Done	   20180319	 [  Uploaded  ]
+- 3.1    Build (F2FS) Done         20180319      [  Uploaded  ]
 
 Thanks to: 
 - @rmnhg      [For kernel source] 
