@@ -396,7 +396,6 @@ static void wakeup_source_activate(struct wakeup_source *ws)
 {
 	unsigned int cec;
 
-
  if (!enable_si_ws && !strcmp(ws->name, "sensor_ind"))
  return;
 
@@ -421,6 +420,7 @@ static void wakeup_source_activate(struct wakeup_source *ws)
 	 * out of PM_SUSPEND_FREEZE state
 	 */
 	freeze_wake();
+
 	ws->active = true;
 	ws->active_count++;
 	ws->last_time = ktime_get();
