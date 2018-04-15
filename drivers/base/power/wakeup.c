@@ -31,6 +31,10 @@ static bool enable_wlan_wake_ws = true;
 module_param(enable_wlan_wake_ws, bool, 0644);
 static bool enable_smb135x_wake_ws = true;
 module_param(enable_smb135x_wake_ws, bool, 0644);
+static bool enable_bluedroid_timer_ws = true;
+module_param(enable_bluedroid_timer_ws, bool, 0644);
+static bool enable_bluesleep_ws = true;
+module_param(enable_bluesleep_ws, bool, 0644);
 
 /*
  * If set, the suspend/hibernate code will abort transitions to a sleep state
@@ -392,7 +396,6 @@ static void wakeup_source_activate(struct wakeup_source *ws)
 {
 	unsigned int cec;
 
-
  if (!enable_si_ws && !strcmp(ws->name, "sensor_ind"))
  return;
 
@@ -407,6 +410,16 @@ static void wakeup_source_activate(struct wakeup_source *ws)
 
  if (!enable_wlan_wake_ws && !strcmp(ws->name, "wlan_wake"))
  return;
+
+ if (!enable_bluedroid_timer_ws && !strcmp(ws->name, "bluedroid_timer"))
+ return;
+
+
+	/*
+	 * active wakeup source should bring the system
+	 * out of PM_SUSPEND_FREEZE state
+	 */
+	freeze_wake();
 
 	ws->active = true;
 	ws->active_count++;

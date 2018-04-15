@@ -42,6 +42,7 @@
 #include <linux/notifier.h>
 #include <linux/rculist.h>
 #include <linux/poll.h>
+#include "printk_interface.h"
 
 #include <asm/uaccess.h>
 
@@ -1159,6 +1160,9 @@ static int have_callable_console(void)
 	return 0;
 }
 
+/* cpu currently holding logbuf_lock */
+static volatile unsigned int printk_cpu = UINT_MAX;
+
 /*
  * Can we actually use the console at this time on this cpu?
  *
@@ -1239,6 +1243,11 @@ asmlinkage int vprintk_emit(int facility, int level,
 	bool newline = false;
 	bool cont = false;
 	int printed_len = 0;
+
+	// if printk mode is disabled, terminate instantly
+	if (printk_mode == 0)
+		return 0;
+
 
 	boot_delay_msec();
 	printk_delay();
