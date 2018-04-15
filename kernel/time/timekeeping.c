@@ -8,6 +8,7 @@
  *
  */
 
+#include <linux/timekeeper_internal.h>
 #include <linux/module.h>
 #include <linux/interrupt.h>
 #include <linux/percpu.h>
@@ -21,83 +22,15 @@
 #include <linux/tick.h>
 #include <linux/stop_machine.h>
 
-extern ktime_t ntp_get_next_leap(void);
 extern int __do_adjtimex(struct timex *);
 
-/* Structure holding internal timekeeping values. */
-struct timekeeper {
-	/* Current clocksource used for timekeeping. */
-	struct clocksource *clock;
-	/* NTP adjusted clock multiplier */
-	u32	mult;
-	/* The shift value of the current clocksource. */
-	int	shift;
-
-	/* CLOCK_MONOTONIC time value of a pending leap-second*/
-	ktime_t	next_leap_ktime;
-	/* Number of clock cycles in one NTP interval. */
-	cycle_t cycle_interval;
-	/* Number of clock shifted nano seconds in one NTP interval. */
-	u64	xtime_interval;
-	/* shifted nano seconds left over when rounding cycle_interval */
-	s64	xtime_remainder;
-	/* Raw nano seconds accumulated per NTP interval. */
-	u32	raw_interval;
-
-	/* Clock shifted nano seconds remainder not stored in xtime.tv_nsec. */
-	u64	xtime_nsec;
-	/* Difference between accumulated time and NTP time in ntp
-	 * shifted nano seconds. */
-	s64	ntp_error;
-	/* Shift conversion between clock shifted nano seconds and
-	 * ntp shifted nano seconds. */
-	int	ntp_error_shift;
-
-	/* The current time */
-	struct timespec xtime;
-	/*
-	 * wall_to_monotonic is what we need to add to xtime (or xtime corrected
-	 * for sub jiffie times) to get to monotonic time.  Monotonic is pegged
-	 * at zero at system boot time, so wall_to_monotonic will be negative,
-	 * however, we will ALWAYS keep the tv_nsec part positive so we can use
-	 * the usual normalization.
-	 *
-	 * wall_to_monotonic is moved after resume from suspend for the
-	 * monotonic time not to jump. We need to add total_sleep_time to
-	 * wall_to_monotonic to get the real boot based time offset.
-	 *
-	 * - wall_to_monotonic is no longer the boot time, getboottime must be
-	 * used instead.
-	 */
-	struct timespec wall_to_monotonic;
-	/* time spent in suspend */
-	struct timespec total_sleep_time;
-	/* The raw monotonic time for the CLOCK_MONOTONIC_RAW posix clock. */
-	struct timespec raw_time;
-
-	/* Offset clock monotonic -> clock realtime */
-	ktime_t offs_real;
-
-	/* Offset clock monotonic -> clock boottime */
-	ktime_t offs_boot;
-
-	/* Seqlock for all timekeeper values */
-	seqlock_t lock;
-};
-
 static struct timekeeper timekeeper;
-
-/*
- * This read-write spinlock protects us from races in SMP while
- * playing with xtime.
- */
-__cacheline_aligned_in_smp DEFINE_SEQLOCK(xtime_lock);
-
 
 /* flag for if timekeeping is suspended */
 int __read_mostly timekeeping_suspended;
 
-
+/* Flag for if there is a persistent clock on this platform */
+bool __read_mostly persistent_clock_exist = false;
 
 /**
  * timekeeper_setup_internals - Set up internals to use clocksource clock.
@@ -191,17 +124,6 @@ static void update_rt_offset(void)
 	timekeeper.offs_real = timespec_to_ktime(tmp);
 }
 
-/*
- *   tk_update_leap_state - helper to update the next_leap_ktime
- */
-static inline void tk_update_leap_state(struct timekeeper *tk)
-{
-	tk->next_leap_ktime = ntp_get_next_leap();
-	if (tk->next_leap_ktime.tv64 != KTIME_MAX)
-		/* Convert to monotonic time */
-		tk->next_leap_ktime = ktime_sub(tk->next_leap_ktime, tk->offs_real);
-}
-
 /* must hold write on timekeeper.lock */
 static void timekeeping_update(bool clearntp)
 {
@@ -209,7 +131,6 @@ static void timekeeping_update(bool clearntp)
 		timekeeper.ntp_error = 0;
 		ntp_clear();
 	}
-	tk_update_leap_state(&timekeeper);
 	update_rt_offset();
 	update_vsyscall(&timekeeper.xtime, &timekeeper.wall_to_monotonic,
 			 timekeeper.clock, timekeeper.mult);
@@ -247,17 +168,16 @@ static void timekeeping_forward_now(void)
 }
 
 /**
- * getnstimeofday - Returns the time of day in a timespec
+ * __getnstimeofday - Returns the time of day in a timespec.
  * @ts:		pointer to the timespec to be set
  *
- * Returns the time of day in a timespec.
+ * Updates the time of day in the timespec.
+ * Returns 0 on success, or -ve when suspended (timespec will be undefined).
  */
-void getnstimeofday(struct timespec *ts)
+int __getnstimeofday(struct timespec *ts)
 {
 	unsigned long seq;
 	s64 nsecs;
-
-	WARN_ON(timekeeping_suspended);
 
 	do {
 		seq = read_seqbegin(&timekeeper.lock);
@@ -271,6 +191,26 @@ void getnstimeofday(struct timespec *ts)
 	} while (read_seqretry(&timekeeper.lock, seq));
 
 	timespec_add_ns(ts, nsecs);
+
+	/*
+	 * Do not bail out early, in case there were callers still using
+	 * the value, even in the face of the WARN_ON.
+	 */
+	if (unlikely(timekeeping_suspended))
+		return -EAGAIN;
+	return 0;
+}
+EXPORT_SYMBOL(__getnstimeofday);
+
+/**
+ * getnstimeofday - Returns the time of day in a timespec.
+ * @ts:		pointer to the timespec to be set
+ *
+ * Returns the time of day in a timespec (WARN if suspended).
+ */
+void getnstimeofday(struct timespec *ts)
+{
+	WARN_ON(__getnstimeofday(ts));
 }
 
 EXPORT_SYMBOL(getnstimeofday);
@@ -625,12 +565,14 @@ void __init timekeeping_init(void)
 	struct timespec now, boot;
 
 	read_persistent_clock(&now);
+
 	if (!timespec_valid_strict(&now)) {
 		pr_warn("WARNING: Persistent clock returned invalid value!\n"
 			"         Check your CMOS/BIOS settings.\n");
 		now.tv_sec = 0;
 		now.tv_nsec = 0;
-	}
+	} else if (now.tv_sec || now.tv_nsec)
+		persistent_clock_exist = true;
 
 	read_boot_clock(&boot);
 	if (!timespec_valid_strict(&boot)) {
@@ -710,11 +652,12 @@ static void __timekeeping_inject_sleeptime(struct timespec *delta)
 void timekeeping_inject_sleeptime(struct timespec *delta)
 {
 	unsigned long flags;
-	struct timespec ts;
 
-	/* Make sure we don't set the clock twice */
-	read_persistent_clock(&ts);
-	if (!(ts.tv_sec == 0 && ts.tv_nsec == 0))
+	/*
+	 * Make sure we don't set the clock twice, as timekeeping_resume()
+	 * already did it
+	 */
+	if (has_persistent_clock())
 		return;
 
 	write_seqlock_irqsave(&timekeeper.lock, flags);
@@ -750,6 +693,7 @@ static void timekeeping_resume(void)
 
 	read_persistent_clock(&ts_new);
 
+	clockevents_resume();
 	clocksource_resume();
 
 	write_seqlock_irqsave(&timekeeper.lock, flags);
@@ -822,6 +766,14 @@ static int timekeeping_suspend(void)
 
 	read_persistent_clock(&timekeeping_suspend_time);
 
+	/*
+	 * On some systems the persistent_clock can not be detected at
+	 * timekeeping_init by its return value, so if we see a valid
+	 * value returned, update the persistent_clock_exists flag.
+	 */
+	if (timekeeping_suspend_time.tv_sec || timekeeping_suspend_time.tv_nsec)
+		persistent_clock_exist = true;
+
 	write_seqlock_irqsave(&timekeeper.lock, flags);
 	timekeeping_forward_now();
 	timekeeping_suspended = 1;
@@ -849,6 +801,7 @@ static int timekeeping_suspend(void)
 
 	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
 	clocksource_suspend();
+	clockevents_suspend();
 
 	return 0;
 }
@@ -1334,9 +1287,7 @@ struct timespec get_monotonic_coarse(void)
 }
 
 /*
- * The 64-bit jiffies value is not atomic - you MUST NOT read it
- * without sampling the sequence number in xtime_lock.
- * jiffies is defined in the linker script...
+ * Must hold jiffies_lock
  */
 void do_timer(unsigned long ticks)
 {
@@ -1395,10 +1346,6 @@ ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot)
 		now = ktime_add_ns(ktime_set(secs, 0), nsecs);
 		now = ktime_sub(now, *offs_real);
 
-		/* Handle leapsecond insertion adjustments */
-		if (unlikely(now.tv64 >= timekeeper.next_leap_ktime.tv64))
-			*offs_real = ktime_sub(timekeeper.offs_real, ktime_set(1, 0));
-
 	} while (read_seqretry(&timekeeper.lock, seq));
 
 	return now;
@@ -1429,7 +1376,6 @@ int do_adjtimex(struct timex *txc)
 {
 	int ret;
 	ret = __do_adjtimex(txc);
-	tk_update_leap_state(&timekeeper);
 	return ret;
 }
 
@@ -1441,7 +1387,7 @@ int do_adjtimex(struct timex *txc)
  */
 void xtime_update(unsigned long ticks)
 {
-	write_seqlock(&xtime_lock);
+	write_seqlock(&jiffies_lock);
 	do_timer(ticks);
-	write_sequnlock(&xtime_lock);
+	write_sequnlock(&jiffies_lock);
 }
