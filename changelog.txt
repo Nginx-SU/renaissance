@@ -1,3 +1,19 @@
+- Fourth Build (20180415)
+	- Misc change with WLAN
+	- Update powersuspend to v1.6
+	- Fixed some freeze issue after upstream cpu governor
+	- Fixed upstream cpu governor
+	- Updated new power manager API
+	- Optimized kernel sched balance feature
+	- Added new filesystem dynamic read-ahead
+	- Added interface toggle of printk logger
+	- Added MSM Hotplug and disable intelli plug
+	- Misc kernel optimizations
+	- Fix some memory leak issue on selinux and other
+	- Added new wakelock toggle (bluedroid and bluesleep)
+	- Updated kernel power efficient workqueue algorithm
+	- Added initial init.d support
+	
 - v3.1  (20180319):
 	- Added upstream cpu governor (thanks to @infus38)
 	- CPU misc optimization
@@ -9,17 +25,7 @@
 	- Misc optimization for intelli thermal
 	- Fix problem with interactive and ondemand crash (WIP)
 
-- Third Build (20180307): 
-	- Update FAUX Sound Control to v3.6
-	- Added Maple I/O Sched with state notifier
-	- Added TCP Ascarex congestions
-	- Removed stock mpdecision on kernel to fix hotplug problem
-	- Configure some CPU Governor freq & Update Alucard to v1.1 (based on semaphore kernel adapted to flamingo)
-	- Removed SDCARDFS Drivers (Not work)
-	- Added Tripndroid I/O Sched
-	- Setting up Maple as default I/O Sched and Westwood as default TCP Congestion (Need Test)
-
-- Third Build (20180304)[F2FS Version]:
+- Third Build (20180304):
 	- Re-port F2FS to current revision branch from f2fs-stable.git
 	- Re-configure F2FS configs
 	- Update FAUX Sound Control to v3.6
